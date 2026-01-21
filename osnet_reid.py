@@ -17,6 +17,7 @@ class OSNetReID:
                 device=device
             )
 
+# Todo: esp, min_sampleを引数で設定できるようにする
     @classmethod
     def cluster_imgs(cls, img_paths):
         cls._init_extractor()
@@ -35,18 +36,15 @@ if __name__ == "__main__":
     import glob
     import os
     import sys
+    from img_utils.img_utils import load_img_paths_from_dir
 
     input_dir = sys.argv[1]
-    img_paths = []
-    exts = ["jpg", "jpeg", "png"]
-    for ext in exts:
-        img_paths += glob.glob(os.path.join(input_dir, f"*.{ext}"))
-        img_paths += glob.glob(os.path.join(input_dir, f"*.{ext.upper()}"))
+    img_paths = load_img_paths_from_dir(input_dir)
 
     groups = OSNetReID.cluster_imgs(img_paths)
 
     for label, paths in groups.items():
-        print(f"Cluster {label}:")
+        print(f"Cluster :{label}")
         for path in paths:
             print(f"  {path}")
 
