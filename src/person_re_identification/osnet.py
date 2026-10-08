@@ -158,7 +158,7 @@ class OSNet:
         return groups
 
     @classmethod
-    def find_top_n_similar_pairs(cls, img_paths, top_n=-1, similarity_threshold=0.8):
+    def find_top_n_similar_pairs(cls, img_paths, top_n=-1, similarity_threshold=0):
         cls._init_extractor()
         # 特徴抽出と正規化
         feats = np.asarray(cls.extractor(img_paths))
@@ -175,13 +175,10 @@ class OSNet:
         flat_similarities = sim_matrix[triu_indices]
         
         if top_n == -1:
-            if similarity_threshold is not None:
-                # 閾値以上のインデックスのみ抽出
-                candidate_indices = np.where(flat_similarities >= similarity_threshold)[0]
-                # 類似度の降順でソート
-                sorted_indices = candidate_indices[np.argsort(flat_similarities[candidate_indices])[::-1]]
-            else:
-                sorted_indices = np.argsort(flat_similarities)[::-1]
+            # 閾値以上のインデックスのみ抽出
+            candidate_indices = np.where(flat_similarities >= similarity_threshold)[0]
+            # 類似度の降順でソート
+            sorted_indices = candidate_indices[np.argsort(flat_similarities[candidate_indices])[::-1]]
         else:
             # 指定された top_n が総ペア数を超えないように調整
             actual_top_n = min(top_n, len(flat_similarities))
@@ -196,3 +193,27 @@ class OSNet:
             top_pairs.append((img_paths[i], img_paths[j], float(flat_similarities[idx])))
             
         return top_pairs
+
+    @classmethod
+    def find_top_n_similar_pairs_to_query(cls, gallery_img_paths, query_img_path, top_n=-1, similarity_threshold=0):
+        cls._init_extractor()
+        # extract features of gallery and query images 
+        feats_g = np.asarray(cls.extractor(gallery_img_paths))
+        feats_q = np.asarray(cls.extractor([query_img_path]))
+        # normalize features
+        norms_g = np.linalg.norm(feats_g, axis=1, keepdims=True)
+        norms_g = np.maximum(norms_g, 1e-12)
+        feats_g_norm = feats_g / norms_g
+        norms_q = np.linalg.norm(feats_q, axis=1, keepdims=True)
+        norms_q = np.maximum(norms_q, 1e-12)
+        feats_q_norm = feats_q / norms_q
+        # calculate cos similarity. the shape is (N,).  
+        sim_values = np.dot(feats_g_norm, feats_q_norm.T).flatten()
+        sorted_indices = np.argsort(sim_values)[::-1]
+        sim_results = []
+        for idx in sorted_indices:
+            score = float(sim_values[idx])
+            if score < similarity_threshold: break
+            sim_results.append((gallery_img_paths[idx], score))
+            if top_n != -1 and len(sim_results) == top_n: break
+        return sim_results
