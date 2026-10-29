@@ -21,6 +21,9 @@ class OSNet:
             device = "cuda" if torch.cuda.is_available() else "cpu"
             cls.extractor = FeatureExtractor(
                 model_name='osnet_x1_0',
+                # model_name='osnet_ibn_x1_0',
+                # model_name='osnet_ain_x1_0',
+                # model_name='osnet_ain_ms_d_c',
                 device=device
             )
 
